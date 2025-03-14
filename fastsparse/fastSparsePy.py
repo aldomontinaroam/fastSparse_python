@@ -3,7 +3,7 @@ import numpy as np
 import cvxpy as cp
 from scipy.stats import multivariate_normal
 import matplotlib.pyplot as plt
-from utils import normalize
+from .utils import normalize
 
 def fastsparse_coef(model, lambda_=None):
     """
