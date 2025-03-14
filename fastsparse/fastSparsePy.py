@@ -16,8 +16,12 @@ def fastsparse_coef(model, lambda_=None):
     Returns:
         np.ndarray: Coefficients corresponding to lambda
     """
-    if lambda_ is None:
-        return model
+    if not isinstance(model, dict):
+        raise TypeError("Model must be a dictionary {lambda_: coefficients}. Got:", type(model))
+    
+    if lambda_ not in model:
+        raise ValueError(f"Lambda {lambda_} not found in model. Available: {list(model.keys())}")
+    
     return model[lambda_]
 
 def fastsparse_cvfit(X, y, lambda_seq):
@@ -32,9 +36,10 @@ def fastsparse_cvfit(X, y, lambda_seq):
     Returns:
         dict: Fitted models for each lambda
     """
-    models = {l: fastsparse_fit(X, y, l) for l in lambda_seq}
+    models = {}
+    for l in lambda_seq:
+        models.update(fastsparse_fit(X, y, l))
     return models
-
 
 def fastsparse_fit(X, y, lambda_):
     """
@@ -48,21 +53,14 @@ def fastsparse_fit(X, y, lambda_):
     Returns:
         np.ndarray: Coefficients of the model
     """
-    n, p = X.shape
-    beta = cp.Variable(p)
-    
-    # Logistic Loss
+    beta = cp.Variable(X.shape[1])
     log_loss = cp.sum(cp.logistic(-cp.multiply(y, X @ beta)))
-    
-    # L0 Regularization using relaxed surrogate (L1 proxy)
     reg = lambda_ * cp.norm(beta, 1)
-
-    # Objective
     objective = cp.Minimize(log_loss + reg)
     problem = cp.Problem(objective)
     problem.solve()
     
-    return beta.value
+    return {lambda_: beta.value}
 
 
 
